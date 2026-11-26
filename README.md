@@ -13,9 +13,10 @@ LearnTrack is a console-based application, written in plain Core Java, for manag
 Rules the services enforce (each breach shows a clear message instead of crashing):
 
 - Names, batch and course name must not be empty; duration must be a positive whole number.
-- An email, when given, must look like `name@domain.tld` and be unique among students.
+- An email, when given, must look like `name@domain.tld` with no empty domain parts (so `a@x..com` and `a@x.y.` are rejected) and be unique among students.
 - Course names must be unique (case-insensitive).
-- Students are deactivated, never deleted. Inactive students and inactive courses cannot be used in new enrollments.
+- The menu deactivates students instead of deleting them. `EnrollmentService.removeStudent` refuses to delete a student who still has any enrollment. Inactive students and inactive courses cannot be used in new enrollments.
+- The services only hand out copies of students, courses and enrollments, so every change goes through a service method and its rules.
 - A student cannot have two `ACTIVE` enrollments in the same course.
 - Only an `ACTIVE` enrollment can be marked `COMPLETED` or `CANCELLED`.
 - Unknown IDs, non-numeric input and unknown menu options are reported, and the program carries on.
@@ -108,7 +109,7 @@ Java_Crashcourse/
 └── src/com/airtribe/learntrack/
     ├── entity/       Person, Student, Trainer, Course, Enrollment, EnrollmentStatus
     ├── service/      StudentService, CourseService, EnrollmentService
-    ├── ui/           Main (menus), ConsoleInput (package-private input helper)
+    ├── ui/           Main (menus), ConsoleInput and InputClosedException (package-private input helpers)
     ├── exception/    EntityNotFoundException, InvalidInputException
     └── util/         IdGenerator, InputValidator
 ```
@@ -165,7 +166,7 @@ classDiagram
         +findStudentById(int) Student
         +listStudents() ArrayList~Student~
         +updateStudent(...) Student
-        +removeStudent(int) void
+        ~removeStudent(int) void
         +deactivateStudent(int) Student
     }
     class CourseService {
@@ -182,6 +183,7 @@ classDiagram
         +listEnrollmentsForStudent(int) ArrayList~Enrollment~
         +markCompleted(int) Enrollment
         +markCancelled(int) Enrollment
+        +removeStudent(int) void
     }
 
     class Main {
@@ -191,6 +193,7 @@ classDiagram
         ~readLine(String) String
         ~readInt(String, String) int
     }
+    class InputClosedException
     class IdGenerator {
         -int studentIdCounter$
         -int courseIdCounter$
@@ -222,6 +225,8 @@ classDiagram
     Main --> CourseService : calls
     Main --> EnrollmentService : calls
     Main --> ConsoleInput : reads with
+    ConsoleInput ..> InputClosedException : throws at end of input
+    Main ..> InputClosedException : catches
 
     StudentService ..> IdGenerator
     CourseService ..> IdGenerator
@@ -246,13 +251,13 @@ In short:
 |---|---|
 | Packages, access levels | all sub-packages; `ConsoleInput` is package-private, fields are `private` |
 | Encapsulation, constructors | `entity/*` (private fields, getters/setters) |
-| Constructor overloading | `Student` (with / without email), `Enrollment`, `EntityNotFoundException` |
+| Constructor overloading | `Student` (with / without email), `Enrollment`, `EntityNotFoundException`; copy constructors in `Student`, `Course`, `Enrollment` |
 | Inheritance, `super`, overriding | `Person` -> `Student`, `Trainer` (`getDisplayName()`) |
 | Polymorphism | `Person.toString()` calls `getDisplayName()`; the subclass version runs |
 | Static members | `IdGenerator` counters and methods, `InputValidator`, `Main.main` |
 | Method overloading | `addStudent`, `addCourse`, `listStudents`, `listCourses` |
 | `ArrayList` | the three services |
 | Control flow | `while` menu loops with `switch` in `Main`; `for` loops in the services |
-| Exception handling | custom exceptions; `try`-`catch` in `InputValidator.parseInt` and in the menu loops |
+| Exception handling | custom exceptions; `try`-`catch` in `InputValidator.parseInt`, in the menu loops, and in `Main.run` for end of input |
 
 More detail on the design choices is in [docs/Design_Notes.md](docs/Design_Notes.md).

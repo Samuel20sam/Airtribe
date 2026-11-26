@@ -26,6 +26,13 @@ public class Student extends Person {
         this.active = true;
     }
 
+    /** Copy constructor: StudentService hands out copies so callers cannot change the stored student. */
+    public Student(Student other) {
+        super(other);
+        this.batch = other.batch;
+        this.active = other.active;
+    }
+
     public String getBatch() {
         return batch;
     }

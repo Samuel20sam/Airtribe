@@ -8,7 +8,10 @@ import com.airtribe.learntrack.util.InputValidator;
 
 import java.util.ArrayList;
 
-/** All the business logic for courses. Data lives in memory in an ArrayList. */
+/**
+ * All the business logic for courses. Data lives in memory in an ArrayList.
+ * Callers only ever get copies of the stored courses, so every change has to go through this service.
+ */
 public class CourseService {
 
     private final ArrayList<Course> courses = new ArrayList<>();
@@ -22,7 +25,7 @@ public class CourseService {
         Course course = new Course(IdGenerator.getNextCourseId(), cleanName,
                 InputValidator.trimOrEmpty(description), durationInWeeks);
         courses.add(course);
-        return course;
+        return new Course(course);
     }
 
     // Method overloading: a course without a description.
@@ -31,31 +34,23 @@ public class CourseService {
     }
 
     public Course findCourseById(int id) throws EntityNotFoundException {
-        for (Course course : courses) {
-            if (course.getId() == id) {
-                return course;
-            }
-        }
-        throw new EntityNotFoundException("Course", id);
+        return new Course(findStoredCourse(id));
     }
 
-    /** Returns a copy, so callers cannot change our internal list by accident. */
+    /** Returns a new list of course copies: callers can change neither our list nor the courses in it. */
     public ArrayList<Course> listCourses() {
-        return new ArrayList<>(courses);
+        return listCourses(false);
     }
 
     // Overloaded: pass true to get only the active courses.
     public ArrayList<Course> listCourses(boolean activeOnly) {
-        if (!activeOnly) {
-            return listCourses();
-        }
-        ArrayList<Course> activeCourses = new ArrayList<>();
+        ArrayList<Course> result = new ArrayList<>();
         for (Course course : courses) {
-            if (course.isActive()) {
-                activeCourses.add(course);
+            if (!activeOnly || course.isActive()) {
+                result.add(new Course(course));
             }
         }
-        return activeCourses;
+        return result;
     }
 
     public Course activateCourse(int id) throws EntityNotFoundException {
@@ -67,9 +62,19 @@ public class CourseService {
     }
 
     private Course setCourseActive(int id, boolean active) throws EntityNotFoundException {
-        Course course = findCourseById(id);
+        Course course = findStoredCourse(id);
         course.setActive(active);
-        return course;
+        return new Course(course);
+    }
+
+    /** Returns the course object we actually store. Only this class may change it, so it is never handed out. */
+    private Course findStoredCourse(int id) throws EntityNotFoundException {
+        for (Course course : courses) {
+            if (course.getId() == id) {
+                return course;
+            }
+        }
+        throw new EntityNotFoundException("Course", id);
     }
 
     private void ensureNameIsUnique(String courseName) throws InvalidInputException {

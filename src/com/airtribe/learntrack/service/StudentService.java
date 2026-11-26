@@ -8,7 +8,10 @@ import com.airtribe.learntrack.util.InputValidator;
 
 import java.util.ArrayList;
 
-/** All the business logic for students. Data lives in memory in an ArrayList. */
+/**
+ * All the business logic for students. Data lives in memory in an ArrayList.
+ * Callers only ever get copies of the stored students, so every change has to go through this service.
+ */
 public class StudentService {
 
     private static final int NO_ID = -1;
@@ -27,7 +30,7 @@ public class StudentService {
         Student student = new Student(IdGenerator.getNextStudentId(), cleanFirstName, cleanLastName,
                 cleanEmail, cleanBatch);
         students.add(student);
-        return student;
+        return new Student(student);
     }
 
     // Method overloading: same name, different parameters. Adds a student without an email.
@@ -36,31 +39,23 @@ public class StudentService {
     }
 
     public Student findStudentById(int id) throws EntityNotFoundException {
-        for (Student student : students) {
-            if (student.getId() == id) {
-                return student;
-            }
-        }
-        throw new EntityNotFoundException("Student", id);
+        return new Student(findStoredStudent(id));
     }
 
-    /** Returns a copy, so callers cannot change our internal list by accident. */
+    /** Returns a new list of student copies: callers can change neither our list nor the students in it. */
     public ArrayList<Student> listStudents() {
-        return new ArrayList<>(students);
+        return listStudents(false);
     }
 
     // Overloaded: pass true to get only the active students.
     public ArrayList<Student> listStudents(boolean activeOnly) {
-        if (!activeOnly) {
-            return listStudents();
-        }
-        ArrayList<Student> activeStudents = new ArrayList<>();
+        ArrayList<Student> result = new ArrayList<>();
         for (Student student : students) {
-            if (student.isActive()) {
-                activeStudents.add(student);
+            if (!activeOnly || student.isActive()) {
+                result.add(new Student(student));
             }
         }
-        return activeStudents;
+        return result;
     }
 
     /**
@@ -69,7 +64,7 @@ public class StudentService {
      */
     public Student updateStudent(int id, String firstName, String lastName, String email, String batch)
             throws EntityNotFoundException, InvalidInputException {
-        Student student = findStudentById(id);
+        Student student = findStoredStudent(id);
 
         if (!InputValidator.isBlank(email)) {
             String cleanEmail = InputValidator.cleanOptionalEmail(email);
@@ -85,16 +80,16 @@ public class StudentService {
         if (!InputValidator.isBlank(batch)) {
             student.setBatch(batch.trim());
         }
-        return student;
+        return new Student(student);
     }
 
     /**
-     * Permanently deletes a student. The menu does not use this: it deactivates students instead,
-     * so their enrollments still point at a student that exists.
+     * Permanently deletes a student. Package-private on purpose: this class cannot see enrollments,
+     * so code outside the service package must call EnrollmentService.removeStudent, which refuses
+     * while any enrollment still refers to the student. The menu deactivates students instead.
      */
-    public void removeStudent(int id) throws EntityNotFoundException {
-        Student student = findStudentById(id);
-        students.remove(student);
+    void removeStudent(int id) throws EntityNotFoundException {
+        students.remove(findStoredStudent(id));
     }
 
     public Student deactivateStudent(int id) throws EntityNotFoundException {
@@ -106,9 +101,19 @@ public class StudentService {
     }
 
     private Student setStudentActive(int id, boolean active) throws EntityNotFoundException {
-        Student student = findStudentById(id);
+        Student student = findStoredStudent(id);
         student.setActive(active);
-        return student;
+        return new Student(student);
+    }
+
+    /** Returns the student object we actually store. Only this class may change it, so it is never handed out. */
+    private Student findStoredStudent(int id) throws EntityNotFoundException {
+        for (Student student : students) {
+            if (student.getId() == id) {
+                return student;
+            }
+        }
+        throw new EntityNotFoundException("Student", id);
     }
 
     private void ensureEmailIsUnique(String email, int ignoredStudentId) throws InvalidInputException {

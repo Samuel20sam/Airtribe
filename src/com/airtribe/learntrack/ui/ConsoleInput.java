@@ -13,14 +13,14 @@ class ConsoleInput {
 
     private final Scanner scanner = new Scanner(System.in);
 
-    /** Shows the prompt and returns what the user typed, trimmed. */
+    /**
+     * Shows the prompt and returns what the user typed, trimmed.
+     * Throws InputClosedException when input has ended; the caller decides what to do about it.
+     */
     String readLine(String prompt) {
         System.out.print(prompt);
         if (!scanner.hasNextLine()) {
-            // Input ended (e.g. Ctrl+Z / Ctrl+D or piped input ran out): leave cleanly instead of crashing.
-            System.out.println();
-            System.out.println("Input closed. Goodbye!");
-            System.exit(0);
+            throw new InputClosedException();
         }
         return scanner.nextLine().trim();
     }

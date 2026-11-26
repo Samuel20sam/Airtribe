@@ -9,7 +9,7 @@ LearnTrack does not know how many students, courses or enrollments there will be
 
 So `StudentService`, `CourseService` and `EnrollmentService` each keep their data in a private `ArrayList` (`students`, `courses`, `enrollments`), and the code never needs to know how many items there are in advance.
 
-The `list...()` methods return `new ArrayList<>(students)`, a **copy**. This stops other classes from adding or removing items in the service's list behind its back (encapsulation).
+The services never hand out the objects they store. The `list...()` methods return a **new list of copies**, and `find...ById`, `add...` and the other methods return a copy too. The copies are made with copy constructors such as `new Course(course)`. Copying only the list would not be enough: the list would still hold the same `Course` objects, so `listCourses().get(0).setActive(false)` would change the stored course without going through `deactivateCourse`. With copies, other classes cannot add or remove items behind the service's back, or change a stored student, course or enrollment without using a service method and its rules (encapsulation). Inside each service, a private `findStored...` method returns the real object for the service's own changes.
 
 Arrays are still the better choice when the size is known and fixed, for example the arguments array `String[] args` in `main`.
 
@@ -48,9 +48,9 @@ What we gained:
 ## Other design choices
 
 - **Entity / service / UI separation.** Entities only hold data. Services hold the rules (validation, "inactive students cannot enroll", "no duplicate active enrollment"). `Main` only prints menus, reads input and calls services. That way the same services could be reused with a different UI.
-- **Checked custom exceptions.** `EntityNotFoundException` and `InvalidInputException` extend `Exception`, so the compiler forces every caller to handle them or declare `throws`. The menu loops catch them and print a short message instead of crashing.
+- **Checked custom exceptions.** `EntityNotFoundException` and `InvalidInputException` extend `Exception`, so the compiler forces every caller to handle them or declare `throws`. The menu loops catch them and print a short message instead of crashing. The one exception to this is `InputClosedException`, which `ConsoleInput` throws when input ends (Ctrl+Z / Ctrl+D, or piped input runs out). It is unchecked, so it passes straight up to `Main.run`, which prints a goodbye and returns normally. `ConsoleInput` never calls `System.exit`, so the caller stays in control of shutdown.
 - **Validate first, then change state.** `addStudent` checks all input before asking `IdGenerator` for an ID, and `updateStudent` runs its only failing check before changing anything. A rejected request leaves no gaps in the IDs and no half-updated objects.
-- **Deactivate instead of delete.** Students are deactivated (`active = false`), so enrollments never point at a student that no longer exists. `StudentService.removeStudent` exists but the menu does not call it.
+- **Deactivate instead of delete.** The menu deactivates students (`active = false`), so enrollments never point at a student that no longer exists. Permanent removal is possible through `EnrollmentService.removeStudent`, which refuses while any enrollment (of any status) still refers to the student. `StudentService.removeStudent` is package-private because `StudentService` cannot see enrollments, so code outside the `service` package cannot skip that check.
 - **Enum for the enrollment status.** `EnrollmentStatus` allows only `ACTIVE`, `COMPLETED` and `CANCELLED`. With plain Strings, a typo would only show up at run time.
 - **Access levels.** `public` for the API of each class, `private` for fields and helper methods, and default (package-private) for `ConsoleInput`, which only the `ui` package needs.
 - **Entities refer to each other by ID.** `Enrollment` stores `studentId` and `courseId`, not `Student` and `Course` objects. This keeps the entities simple; `EnrollmentService` looks things up through the other services.

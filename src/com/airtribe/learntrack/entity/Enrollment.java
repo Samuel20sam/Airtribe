@@ -30,6 +30,14 @@ public class Enrollment {
         this.status = status;
     }
 
+    /**
+     * Copy constructor: EnrollmentService hands out copies so callers cannot change the stored status.
+     * LocalDate and the enum are immutable, so sharing them is safe.
+     */
+    public Enrollment(Enrollment other) {
+        this(other.id, other.studentId, other.courseId, other.enrollmentDate, other.status);
+    }
+
     public int getId() {
         return id;
     }

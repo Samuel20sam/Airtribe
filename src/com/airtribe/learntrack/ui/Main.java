@@ -32,6 +32,17 @@ public class Main {
 
     private void run() {
         System.out.println("=== LearnTrack: Student & Course Management ===");
+        try {
+            runMainMenu();
+        } catch (InputClosedException e) {
+            // Input ended (e.g. Ctrl+Z / Ctrl+D or piped input ran out): leave cleanly instead of crashing.
+            System.out.println();
+            System.out.println("Input closed.");
+        }
+        System.out.println("Goodbye!");
+    }
+
+    private void runMainMenu() {
         boolean running = true;
         while (running) {
             printMainMenu();
@@ -53,7 +64,6 @@ public class Main {
                     printOptionNotFound(choice);
             }
         }
-        System.out.println("Goodbye!");
     }
 
     private void printMainMenu() {

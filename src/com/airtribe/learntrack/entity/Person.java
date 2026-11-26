@@ -21,6 +21,11 @@ public class Person {
         this.email = email;
     }
 
+    /** Copy constructor: subclasses use it to copy the Person part of another object. */
+    protected Person(Person other) {
+        this(other.id, other.firstName, other.lastName, other.email);
+    }
+
     public int getId() {
         return id;
     }

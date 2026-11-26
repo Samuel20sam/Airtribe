@@ -59,7 +59,11 @@ public final class InputValidator {
         return value;
     }
 
+    /**
+     * name@domain.tld, where the domain is two or more dot-separated labels and no label is empty.
+     * That rejects addresses such as "a@x..com", "a@.x.com" and "a@x.y." (trailing dot).
+     */
     private static boolean isValidEmail(String email) {
-        return email.matches("[^@\\s]+@[^@\\s]+\\.[^@\\s]+");
+        return email.matches("[^@\\s]+@[^@\\s.]+(\\.[^@\\s.]+)+");
     }
 }

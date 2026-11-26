@@ -21,6 +21,12 @@ public class Course {
         this.active = true;
     }
 
+    /** Copy constructor: CourseService hands out copies so callers cannot change the stored course. */
+    public Course(Course other) {
+        this(other.id, other.courseName, other.description, other.durationInWeeks);
+        this.active = other.active;
+    }
+
     public int getId() {
         return id;
     }
