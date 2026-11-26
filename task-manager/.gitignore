@@ -1,0 +1,15 @@
+# Compiled classes
+out/
+*.class
+
+# IDE files
+.idea/
+*.iml
+.vscode/
+
+# Secrets: never commit an API key
+.env
+.env.*
+
+# Windows compile helper (see README)
+sources.txt

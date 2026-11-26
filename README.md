@@ -1,5 +1,7 @@
 # LearnTrack: Student & Course Management System
 
+> This repository also holds the **Module 10 project, Task Manager Service**: an AI-assisted task manager in plain Java. See [task-manager/README.md](task-manager/README.md).
+
 LearnTrack is a console-based application, written in plain Core Java, for managing **students**, **courses** and **enrollments**. It is menu-driven, keeps all data in memory (no database or files), and is built to practise Java fundamentals: packages, classes and objects, constructors, encapsulation, inheritance, static members, `ArrayList` and basic exception handling.
 
 ## Features
